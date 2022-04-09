@@ -1,0 +1,5 @@
+@import url('https://fonts.googleapis.com/css?family=Mukta');
+.card:hover{
+    background: rgb(56 60 203 / 80%);
+    opacity: 0.5;
+}

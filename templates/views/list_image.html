@@ -1,0 +1,508 @@
+{% extends "decorators/web.html" %}
+{% block content %}
+
+<style type="text/css">
+  .card:hover{
+    background: rgba(96, 99, 211, 0.8);
+    opacity: 0.5;
+  }
+</style>
+
+<div class="row container-fluid" style="min-height:700px; width:100%;margin-top:60px;">
+  <div class="col-3 ">
+    <div id="container-sidebar" class="list-group shadow p-1" style="width: 20%;position:fixed;" >
+      <button type="button" class="list-group-item list-group-item-action" id="btn-myPicShow">
+        <i class="fa fa-picture-o"></i>
+        My Picture
+      </button>
+      <button type="button" class="list-group-item list-group-item-action" id="btn-shareToMe">
+        <i class="fa fa-share-square-o"></i>
+        Share To Me
+      </button>
+      <button type="button" class="list-group-item list-group-item-action"
+      id="btn-selectAll">
+      <i class="fa fa-check-square-o"></i>
+       Select All
+      </button>
+        <!-- Button trigger modal -->
+      <button type="button" class="list-group-item 
+      list-group-item-action" data-toggle="modal"
+        data-target="#modalAddImage">
+        <i class="fa fa-plus-square"></i>
+         Add new image
+      </button>
+      <button type="button" class="list-group-item list-group-item-action"
+       id="btn-saveImage">
+       <i class="fa fa-download"></i>
+        Save
+      </button>
+    </div>
+  </div>
+
+  <div class="col-8 ml-2" >
+    <div class="row" id="container-show-card">
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="modalAddImage" tabindex="-1" role="dialog" 
+aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+
+        <input type="file" id = "input_file_upload" name="" onchange="getBase64(this);" accept="image/*">
+        <img id="file-upload-image" height="100px" width="100px" style="display:none" src="https://cdn.onlinewebfonts.com/svg/img_510738.png" alt="your image"/>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary"
+        id="input_close_file"
+         data-dismiss="modal">Close</button>
+        <button type="button" 
+        id="input_submit_file"
+        class="btn btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalDetailImage" tabindex="-1" role="dialog" 
+aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Share To</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-primary" role="alert"
+        style="display:none;"
+        id="alert_share">
+          This is a primary alert—check it out!
+        </div>
+        <input type="hidden" id="input_picShare" value="0">
+        <div class="form-group">
+          <label for="exampleInputEmail1"><strong>Username</strong></label>
+          <input type="text" class="form-control" 
+          id="input_user_shareTo" aria-describedby="emailHelp" 
+          placeholder="Enter username">
+          <small id="emailHelp"  style="margin-left: 6px;"
+          class="form-text text-muted">username bạn muốn chia sẽ tới</small>
+        </div>
+        <div class="form-group">
+          <label class="" for=""><strong>Đã share</strong></label>
+          <ul class="list-group" style="max-height: 200px;overflow:auto;"
+            id="container-showListUserShare"  
+          >
+            <li class="list-group-item">Cras justo odio</li>
+            <li class="list-group-item">Dapibus ac facilisis in</li>
+            <li class="list-group-item">Morbi leo risus</li>
+            <li class="list-group-item">Porta ac consectetur ac</li>
+            <li class="list-group-item">Vestibulum at eros</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary"
+        id="input_close_share"
+         data-dismiss="modal">Close</button>
+         <button type="button" 
+         id="input_submit_share"
+         class="btn btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+let con_sideBar= document.getElementById('container-sidebar')
+function activeBtnSideBar(btn){
+  list_btn = con_sideBar.getElementsByClassName('list-group-item')
+  for(var i of list_btn){
+    i.classList.remove('active')
+    //i.classList.replace('active','')
+  }
+  btn.classList.add('active')
+}
+
+// script upload image
+var url_file_upload = "{{url_for('upload_img')}}"
+var file_upload = document.getElementById('input_file_upload')
+var img_show = document.getElementById('file-upload-image')
+function getBase64(input) { //convert to string base64
+  return new Promise((resolve, reject) => {
+    var file = input.files[0]
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => 
+      {
+        img_show.src=reader.result
+        img_show.style="display:block;"
+        resolve(reader.result);
+      }
+    reader.onerror = error => reject(error);
+  });
+}
+$("#input_submit_file").click(function(){
+  var len = file_upload.files.length
+  if(len==0) {
+    alert("ảnh chưa upload")
+    return
+  }
+  var fileObject =file_upload.files[0]
+  
+  data={
+    'file': fileObject,
+    'lastModified'     : fileObject.lastModified,
+    'lastModifiedDate' : fileObject.lastModifiedDate,
+    'name'             : fileObject.name,
+    'size'             : fileObject.size,
+    'type'             : fileObject.type,
+    'readfile':         img_show.src
+  }
+
+  $.ajax({
+    url: url_file_upload,
+    async:false,
+    type: 'POST',
+    data: JSON.stringify(data),
+    success: function (res, status) {
+        console.log('done');
+        var data=JSON.parse(res)
+        var success = data['success']
+        document.getElementById("input_close_file").click()
+        if(success==true){
+          alert('Upload thanh cong')
+          btn_myPic.click()
+        }else{
+          alert('Upload that bai')
+        }
+    },
+    error: function (xhr, desc, err) {
+      console.log(xhr);
+      console.log("Desc: " + desc + "\nErr:" + err);
+    },
+   
+  });
+})
+
+
+//script show list card image
+const urlMyPictureListID= "{{url_for('getPictures')}}"
+function getMyPictureList(url,permission){
+    clear_show()
+    $.ajax({
+      url: url,
+      async:true,
+      type: 'GET',
+      success: function (res, status) {
+          console.log('done');
+          var data=JSON.parse(res)
+          for (var pic_id of data['picture_ids']){
+            var detail = getImageDetail(pic_id['picture_id'])
+            showCardImage(detail,permission)
+          }
+      },
+      error: function (xhr, desc, err) {
+        console.log(xhr);
+        console.log("Desc: " + desc + "\nErr:" + err);
+      },
+    });
+}
+const urlMyPictureDetail= "{{url_for('searchPicture',picture_id=0)}}" //default id =0 to ez replace
+function getImageDetail(picture_id){
+  var detail
+  $.ajax({
+    url: urlMyPictureDetail.replace('0',picture_id),
+    async:false,
+    type: 'GET',
+    success: function (res, status) {
+        console.log('done');
+        data=JSON.parse(res)
+        detail=data
+    },
+    error: function (xhr, desc, err) {
+      console.log(xhr);
+      console.log("Desc: " + desc + "\nErr:" + err);
+    },
+  });
+  return detail
+}
+
+let contShow= document.getElementById('container-show-card')
+function showCardImage(data,permission){
+  create_at= data['create_at']
+  fullname= data['fullname']
+  pic= data['pic']
+  picture_id= data['picture_id']
+  userlogin_id= data['userlogin_id']
+  username= data['username']
+  let div = document.createElement('div')
+  div.setAttribute('class','col-md-6 col-lg-4 mb-4')
+
+  var btn =   (permission)?`<button type="button" class="btn btn-primary" 
+  data-toggle="modal" data-target="#modalDetailImage"
+  onclick="fillModalShareFor(`+picture_id+`)">
+  <i class="fa fa-share-square-o"></i>
+    Share
+</button>`:`` 
+  div.innerHTML=`
+    <div class="card  hover-overlay bg-img" 
+    id="card`+picture_id+`"
+    style="height: 360px; radius">
+      <input class="form-check-input card_check"
+      id="check_card`+picture_id+`" onclick="check_click(`+picture_id+`)"
+      type="checkbox" name="`+picture_id+`"
+      id="flexRadioDefault1" style="margin-left: 3px;transform: scale(1.5);">
+      <img src="`+pic+`" class="card-img-top" id="img_card`+picture_id+`" 
+        height="215px" alt="...">
+      <div class="card-body">
+        <h5 class="card-title" style="display:block;">`+username+`</h5>
+        <h6 class="card-text mb-3" style="opacity: 0.8;">`+create_at+`</h6>
+
+        <!-- list-group-item list-group-item-action -->
+        `+ btn + `
+        <a href="`+pic+`" class="btn btn-primary"
+         id="btn_save`+picture_id+`"
+         download="picture`+picture_id+`.png" >
+         <i class="fa fa-download"></i>
+
+         Save</a>
+      </div>
+    </div> 
+  `
+  contShow.appendChild(div)
+}
+
+function check_click(pic_id){
+  var check=document.getElementById('check_card'+pic_id)
+  var card=document.getElementById('card'+pic_id)
+  if(check.checked==true){
+    card.style.backgroundColor="rgba(96, 99, 211, 0.8)"
+    card.style.opacity="0.5"
+  }else{
+    card.style.backgroundColor=""
+    card.style.opacity=""
+  }
+}
+
+function clear_show(){
+  contShow.innerHTML=""
+}
+const urlShareToMe = "{{url_for('getPictureShared')}}"
+let btn_myPic= document.getElementById('btn-myPicShow')
+btn_myPic.onclick= function(){
+  contShow.innerHTML=""
+  getMyPictureList(urlMyPictureListID,true)
+  activeBtnSideBar(btn_myPic)
+}
+btn_myPic.click()
+document.getElementById('btn-shareToMe').onclick= function(){
+  contShow.innerHTML=""
+  getMyPictureList(urlShareToMe,false)
+  activeBtnSideBar(document.getElementById('btn-shareToMe'))
+}
+const urlShareFor= "{{url_for('listShareFor',picture_id=0)}}"
+function getShareFor(pic_id){
+  var data = null
+  $.ajax({
+    url: urlShareFor.replace('0',pic_id),
+    async:false,
+    type: 'GET',
+    success: function (res, status) {
+        console.log('done');
+        if(!!res){
+          data=JSON.parse(res)
+        }
+    },
+    error: function (xhr, desc, err) {
+      console.log(xhr);
+      console.log("Desc: " + desc + "\nErr:" + err);
+    },
+  });
+  return data
+}
+
+// show modal share----------------------------
+let input_picShare= document.getElementById('input_picShare')
+function fillModalShareFor(pic_id){
+    input_picShare.value=pic_id
+    loadUserShare(pic_id)
+    input_user_shareTo.value=""
+    alertShare.style.display='none'
+}
+let input_user_shareTo= document.getElementById('input_user_shareTo')
+const urlshareTo= "{{url_for('shareTo')}}"
+let alertShare = document.getElementById('alert_share')
+function deleteShareTo(username){
+  map={
+    "username": username,
+    "picture_id":input_picShare.value,
+  }
+  $.ajax({
+    url: urlshareTo,
+    async:false,
+    data:JSON.stringify(map),
+    type: 'Delete',
+    success: function (res, status) {
+        console.log('done');
+        var data=JSON.parse(res)
+        if(data['success'])
+          document.getElementById("share_"+username).remove()
+        else
+          alert('Xoa that bai')
+    },
+    error: function (xhr, desc, err) {
+      console.log(xhr)
+      console.log("Desc: " + desc + "\nErr:" + err)
+    },
+  });
+}
+document.getElementById('input_submit_share').onclick= function(){
+  var user = input_user_shareTo.value.trim()
+  map={
+    "username": user,
+    "picture_id":input_picShare.value,
+  }
+  $.ajax({
+    url: urlshareTo,
+    async:false,
+    data:JSON.stringify(map),
+    type: 'Post',
+    success: function (res, status) {
+        console.log('done');
+        var data=JSON.parse(res)
+        if(!data['success']){
+          alertShare.classList.replace('alert-primary','alert-danger')
+        }else{
+          alertShare.classList.replace('alert-danger','alert-primary')
+          appendShowShareUser(map)
+          input_user_shareTo.value=""
+
+        }
+        alertShare.style.display='block'
+        alertShare.innerText=data['message']
+        setTimeout(()=>{
+          alertShare.style.display='none'
+        },5000)
+        
+    },
+    error: function (xhr, desc, err) {
+      console.log(xhr);
+      console.log("Desc: " + desc + "\nErr:" + err);
+    },
+  });
+}
+url_listUsershareFor="{{url_for('listShareFor',picture_id=0)}}"
+let showListUserShare= document.getElementById('container-showListUserShare')
+function loadUserShare(pic_id){
+  showListUserShare.innerHTML=""
+  $.ajax({
+    url: url_listUsershareFor.replace('0',pic_id),
+    async:false,
+    type: 'GET',
+    success: function (res, status) {
+        console.log('done');
+        if(!!res){
+          data=JSON.parse(res)
+          console.log(url_listUsershareFor.replace('0',pic_id))
+          share_user_id=data['share_user_id']
+          console.log(res)
+          for(var u of share_user_id){
+            var detail = getDetailUser(u['userlogin_id'])
+            appendShowShareUser(detail)
+          }
+        }
+    },
+    error: function (xhr, desc, err) {
+      console.log( url_listUsershareFor.replace('0',pic_id));
+      console.log("Desc: " + desc + "\nErr:" + err);
+    },
+  });
+}
+url_searchUser= "{{url_for('userloginsearch',userlogin_id=0)}}"
+function getDetailUser(user_id){
+  var data 
+  $.ajax({
+    url: url_searchUser.replace('0',user_id),
+    async:false,
+    type: 'GET',
+    success: function (res, status) {
+        console.log('done');
+        if(!!res){
+          data=JSON.parse(res)
+        }
+    },
+    error: function (xhr, desc, err) {
+      console.log(url_searchUser.replace('0',user_id));
+      console.log("Desc: " + desc + "\nErr:" + err);
+    },
+  });
+  return data
+}
+function appendShowShareUser(data){
+  var user = data['username']
+  var li = document.createElement('li')
+  li.id="share_"+user
+  li.classList.add('list-group-item')
+  li.innerHTML=user+`
+  <button type="button" class="close" aria-label="Close"
+  onclick="deleteShareTo('`+user+`')">
+    <span aria-hidden="true">&times;</span>
+  </button>
+  `
+  showListUserShare.appendChild(li)
+}
+
+// save image
+document.getElementById('btn-saveImage').onclick=function(){
+  list_card= document.getElementsByClassName('card_check')
+  var selected=false
+  for (var card of list_card){
+     if(card.checked){
+       id = card.name.trim()
+       document.getElementById('btn_save'+id).click()
+       card.click()
+       selectAll=true
+       selected=true
+     }
+  }
+  if(!selected) alert('Hãy chọn ảnh')
+}
+
+// select all 
+var selectAll= true
+document.getElementById('btn-selectAll').onclick=function(){
+  list_card= document.getElementsByClassName('card_check')
+  for (var card of list_card){
+    if(selectAll){
+      if(!card.checked){
+        card.click()
+      }
+    }
+    else{
+      if(card.checked){
+        card.click()
+      }
+    }
+  }
+  selectAll=!selectAll
+}
+
+
+
+</script>
+{% endblock %}

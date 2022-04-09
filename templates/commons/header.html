@@ -1,0 +1,42 @@
+
+  <div class="header-blue">
+      <nav class="navbar navbar-light navbar-expand-md navigation-clean-search fixed-top">
+          <div class="container-fluid">
+            <a class="navbar-brand col-3" href="#"><strong>PROJECT</strong> </a>
+              <div style="float:right">
+                <!-- <a class="btn btn-light action-button mr-auto" style="float:right;" 
+                role="button" href="{{url_for('logout')}}">LOGOUT</a> -->
+                <button class="btn btn-light ml-3" id="btn-logout" style="font-weight:400;">
+                  <i class="fa fa-sign-out"></i>
+                  LOGOUT
+                </button>
+
+              </div>
+          </div>
+      </nav>
+  </div>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+  const url_logout="{{url_for('logout')}}"
+  $('#btn-logout').click(function(){
+    if(!confirm('Logout?')){
+      return;
+    }
+    $.ajax({
+      url: url_logout,
+      async:true,
+      type: 'GET',
+      success: function (res, status) {
+          console.log('done');
+          var data=JSON.parse(res)
+          if(data['success']){
+            window.location.href="{{auth}}"
+          }
+      },
+      error: function (xhr, desc, err) {
+        console.log(xhr);
+        console.log("Desc: " + desc + "\nErr:" + err);
+      },
+    });
+  })
+</script>
